@@ -5,9 +5,7 @@ output:
     keep_md: true
 ---
 
-```{r globalOptions, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, dpi = 300)
-```
+
 
 ## Overview
 
@@ -26,18 +24,20 @@ The dataset has a total of 17,568 observations.
 The original data set is de-compressed first and then read into R using `read.csv` function. Variables are also specified to appropriate data types. 
 
 
-```{r}
+
+```r
 unzip("activity.zip")
 activity <- read.csv("activity.csv", colClasses = c("integer", "Date", "integer"))
 ```
 
-Loaded data has `r nrow(activity)` observations across `r ncol(activity)` variables, among which `r sum(is.na(activity$steps))` have missing step values. Observations has a span of `r as.numeric(difftime(max(activity$date), min(activity$date), units = "days"))` days from `r min(activity$date)` to `r max(activity$date)`, with `r length(unique(activity$date))` distinct dates. 
+Loaded data has 17568 observations across 3 variables, among which 2304 have missing step values. Observations has a span of 60 days from 2012-10-01 to 2012-11-30, with 61 distinct dates. 
 
 ## What is mean total number of steps taken per day?
 
 The following histogram shows the frequency of the daily total number of steps taken. 
 
-```{r}
+
+```r
 totalStepsPerDay <- aggregate(steps ~ date, activity, sum, na.rm = TRUE)
 hist(totalStepsPerDay$steps, 
      col = "whitesmoke", 
@@ -45,29 +45,42 @@ hist(totalStepsPerDay$steps,
      main = "Histogram of Total Number of Steps Taken per Day")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png)<!-- -->
+
 To find the central tendency of the distribution: 
 
-```{r}
+
+```r
 meanStepsPerDay <- mean(totalStepsPerDay$steps, na.rm = TRUE)
 meanStepsPerDay
 ```
 
-The mean total number of steps taken per day is approximately `r as.integer(meanStepsPerDay)`. 
+```
+## [1] 10766.19
+```
 
-```{r}
+The mean total number of steps taken per day is approximately 10766. 
+
+
+```r
 medianStepsPerDay <- median(totalStepsPerDay$steps, na.rm = TRUE)
 medianStepsPerDay
 ```
 
-The median total number of steps taken per day is `r medianStepsPerDay`.
+```
+## [1] 10765
+```
 
-The difference between mean and median is `r sprintf("%.2f", (abs(meanStepsPerDay - medianStepsPerDay)))` step(s).
+The median total number of steps taken per day is 10765.
+
+The difference between mean and median is 1.19 step(s).
 
 ## What is the average daily activity pattern?
 
 The following plot shows average number of steps taken over the days recorded at each 5-minute interval of the day.
 
-```{r}
+
+```r
 meanStepsPerInterval <- aggregate(steps ~ interval, activity, mean, na.rm = TRUE)
 plot(steps ~ interval, 
      data = meanStepsPerInterval, 
@@ -80,23 +93,36 @@ plot(steps ~ interval,
 axis(side = 1, at = 100 * seq(0, 24, by = 5), labels = seq(0, 24, by = 5))
 ```
 
-Among `r nrow(meanStepsPerInterval)` 5-minute intervals, on average across all the days in the dataset, the one that contains the maximum number of steps (`r sprintf("%.2f", max(meanStepsPerInterval$steps))`) is: 
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
-```{r}
+Among 288 5-minute intervals, on average across all the days in the dataset, the one that contains the maximum number of steps (206.17) is: 
+
+
+```r
 with(meanStepsPerInterval, interval[steps == max(steps)])
+```
+
+```
+## [1] 835
 ```
 
 ## Imputing missing values
 
 The total number of missing values in the dataset (steps coded as `NA`) is: 
 
-```{r}
+
+```r
 sum(is.na(activity$steps))
+```
+
+```
+## [1] 2304
 ```
 
 The adpoted strategy to fill these missing values in the dataset is to repalce `NA`s with the mean for that 5-minute interval. 
 
-```{r}
+
+```r
 completeActivity <- activity
 completeActivity$intervalMean <- with(completeActivity, ave(interval, date, FUN = function(x) with(meanStepsPerInterval, steps[interval == x])))
 completeActivity$steps <- with(completeActivity, ifelse(is.na(steps), intervalMean, steps))     
@@ -105,7 +131,8 @@ completeActivity <- subset(completeActivity, select = -c(intervalMean))
 
 The following histogram compares the frequency of the daily total number of steps computed from both the original dataset with missing values and the processed dataset. 
 
-```{r}
+
+```r
 completeTotalStepsPerDay <- aggregate(steps ~ date, completeActivity, sum)
 hist(completeTotalStepsPerDay$steps, 
      col = "whitesmoke", 
@@ -126,38 +153,52 @@ legend("topright",
        legend = c("Processed", "Original"))
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
 Mean and median total number of steps taken per day from the processed dataset are: 
 
-```{r}
+
+```r
 completeMeanStepsPerDay <- mean(completeTotalStepsPerDay$steps)
 completeMeanStepsPerDay
 ```
 
-The mean total number of steps taken per day is approximately `r as.integer(completeMeanStepsPerDay)`.
+```
+## [1] 10766.19
+```
 
-The difference from the original mean is `r sprintf("%.2f", (abs(meanStepsPerDay - completeMeanStepsPerDay)))` step(s).
+The mean total number of steps taken per day is approximately 10766.
 
-```{r}
+The difference from the original mean is 0.00 step(s).
+
+
+```r
 completeMedianStepsPerDay <- median(completeTotalStepsPerDay$steps)
 completeMedianStepsPerDay
 ```
 
-The median total number of steps taken per day is `r as.integer(completeMedianStepsPerDay)`.
+```
+## [1] 10766.19
+```
 
-The difference from the original median is `r sprintf("%.2f", (abs(medianStepsPerDay - completeMedianStepsPerDay)))` step(s).
+The median total number of steps taken per day is 10766.
+
+The difference from the original median is 1.19 step(s).
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 The first step to finding potential activity patterns is to distinguish weekdays and weekends. A new factor variable is added to the processed datasets, with 2 levels of `weekday` and `weekend`, to indicate whether a given date is a weekday or weekend day. 
 
-```{r}
+
+```r
 completeActivity$dayType <- as.factor(ifelse(grepl("^S(at|un)", weekdays(completeActivity$date)), "weekend", "weekday"))
 completeMeanStepsPerInterval <- aggregate(steps ~ interval * dayType, completeActivity, mean)
 ```
 
 The following panel plot of two time-series shows difference in activity patterns between weekdays and weekends based on average number of steps taken across 5-minute interval from all days of the same type. 
 
-```{r}
+
+```r
 library(ggplot2)
 g <- ggplot(completeMeanStepsPerInterval, aes(interval, steps, col = dayType)) +
     geom_line() + 
@@ -169,3 +210,5 @@ g <- ggplot(completeMeanStepsPerInterval, aes(interval, steps, col = dayType)) +
     labs(x = "Time (hours)", y = "Average Number of Steps Taken")
 print(g)
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
